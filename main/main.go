@@ -76,7 +76,6 @@ func broadcast(addr1, addr2 string) {
 		go func(i int) {
 			defer wg.Done()
 			foo(xc, context.Background(), "broadcast", "Foo.Sum", &Args{Num1: i, Num2: i * i})
-
 			// expect 2 - 5 timeout
 			ctx, _ := context.WithTimeout(context.Background(), time.Second*2)
 			foo(xc, ctx, "broadcast", "Foo.Sleep", &Args{Num1: i, Num2: i * i})
@@ -89,7 +88,7 @@ func main() {
 	log.SetFlags(0)
 	ch1 := make(chan string)
 	ch2 := make(chan string)
-
+	// start two servers
 	go startServer(ch1)
 	go startServer(ch2)
 

@@ -63,7 +63,7 @@ func (d *MultiServerDiscovery) Get(mode SelectMode) (string, error) {
 	case RandomSelect:
 		return d.servers[d.r.Intn(n)], nil
 	case RoundRobinSelect:
-		s := d.servers[d.index%n] // servers could be update, so mode n to ensure safety
+		s := d.servers[d.index%n] // servers could be updated, so mode n to ensure safety
 		d.index = (d.index + 1) % n
 		return s, nil
 	default:

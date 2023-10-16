@@ -78,7 +78,7 @@ func (xc *XClient) Call(ctx context.Context, serviceMethod string, args, reply i
 func (xc *XClient) Broadcast(ctx context.Context, serviceMethod string, args, reply interface{}) error {
 	servers, err := xc.d.GetAll()
 	if err != nil {
-		return nil
+		return err
 	}
 	var wg sync.WaitGroup
 	var mu sync.Mutex // protect e and replyDone

@@ -14,6 +14,8 @@ type GobCodec struct {
 	enc  *gob.Encoder
 }
 
+var _ Codec = (*GobCodec)(nil)
+
 func NewGobCodec(conn io.ReadWriteCloser) Codec {
 	buf := bufio.NewWriter(conn)
 	return &GobCodec{
@@ -24,32 +26,32 @@ func NewGobCodec(conn io.ReadWriteCloser) Codec {
 	}
 }
 
-func (g *GobCodec) ReadHeader(header *Header) error {
-	return g.dec.Decode(header)
+func (c *GobCodec) ReadHeader(h *Header) error {
+	return c.dec.Decode(h)
 }
 
-func (g *GobCodec) ReadBody(body interface{}) error {
-	return g.dec.Decode(body)
+func (c *GobCodec) ReadBody(body interface{}) error {
+	return c.dec.Decode(body)
 }
 
-func (g *GobCodec) Write(header *Header, body interface{}) error {
+func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
 	defer func() {
-		err := g.buf.Flush()
+		_ = c.buf.Flush()
 		if err != nil {
-			_ = g.Close()
+			_ = c.Close()
 		}
 	}()
-	if err := g.enc.Encode(header); err != nil {
-		log.Println("rpc codec: gob error encoding header:", err)
-		return err
+	if err = c.enc.Encode(h); err != nil {
+		log.Println("rpc: gob error encoding header:", err)
+		return
 	}
-	if err := g.enc.Encode(body); err != nil {
-		log.Println("rpc codec: gob error encoding body:", err)
-		return err
+	if err = c.enc.Encode(body); err != nil {
+		log.Println("rpc: gob error encoding body:", err)
+		return
 	}
-	return nil
+	return
 }
 
-func (g *GobCodec) Close() error {
-	return g.conn.Close()
+func (c *GobCodec) Close() error {
+	return c.conn.Close()
 }

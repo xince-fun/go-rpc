@@ -18,7 +18,7 @@ import (
 const MagicNumber = 0x3bef5c
 
 type Option struct {
-	MagicNumber    int           // MagicNumber marks this is gorpc request
+	MagicNumber    int           // MagicNumber marks this's a geerpc request
 	CodecType      codec.Type    // client may choose different Codec to encode body
 	ConnectTimeout time.Duration // 0 means no limit
 	HandleTimeout  time.Duration
@@ -40,18 +40,16 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-// DefaultServer is the default instance of *Server
+// DefaultServer is the default instance of *Server.
 var DefaultServer = NewServer()
 
 // ServeConn runs the server on a single connection.
 // ServeConn blocks, serving the connection until the client hangs up.
 func (server *Server) ServeConn(conn io.ReadWriteCloser) {
-	defer func() {
-		_ = conn.Close()
-	}()
+	defer func() { _ = conn.Close() }()
 	var opt Option
 	if err := json.NewDecoder(conn).Decode(&opt); err != nil {
-		log.Println("rpc server: options error:", err)
+		log.Println("rpc server: options error: ", err)
 		return
 	}
 	if opt.MagicNumber != MagicNumber {
@@ -89,6 +87,7 @@ func (server *Server) serveCodec(cc codec.Codec, opt *Option) {
 	_ = cc.Close()
 }
 
+// request stores all information of a call
 type request struct {
 	h            *codec.Header // header of request
 	argv, replyv reflect.Value // argv and replyv of request
@@ -99,7 +98,7 @@ type request struct {
 func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 	var h codec.Header
 	if err := cc.ReadHeader(&h); err != nil {
-		if err != io.EOF && !errors.Is(err, io.ErrUnexpectedEOF) {
+		if err != io.EOF && err != io.ErrUnexpectedEOF {
 			log.Println("rpc server: read header error:", err)
 		}
 		return nil, err
@@ -110,7 +109,7 @@ func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 func (server *Server) findService(serviceMethod string) (svc *service, mtype *methodType, err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
-		err = errors.New("rpc server: service/method request ill-format: " + serviceMethod)
+		err = errors.New("rpc server: service/method request ill-formed: " + serviceMethod)
 		return
 	}
 	serviceName, methodName := serviceMethod[:dot], serviceMethod[dot+1:]
@@ -156,7 +155,7 @@ func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interfa
 	sending.Lock()
 	defer sending.Unlock()
 	if err := cc.Write(h, body); err != nil {
-		log.Println("rpc server: write response err:", err)
+		log.Println("rpc server: write response error:", err)
 	}
 }
 
@@ -191,7 +190,7 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 	}
 }
 
-// Accept accepts connections on the listener and servers requests
+// Accept accepts connections on the listener and serves requests
 // for each incoming connection.
 func (server *Server) Accept(lis net.Listener) {
 	for {
@@ -206,10 +205,14 @@ func (server *Server) Accept(lis net.Listener) {
 
 // Accept accepts connections on the listener and serves requests
 // for each incoming connection.
-func Accept(lis net.Listener) {
-	DefaultServer.Accept(lis)
-}
+func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
 
+// Register publishes in the server the set of methods of the
+// receiver value that satisfy the following conditions:
+//   - exported method of exported type
+//   - two arguments, both of exported type
+//   - the second argument is a pointer
+//   - one return value, of type error
 func (server *Server) Register(rcvr interface{}) error {
 	s := newService(rcvr)
 	if _, dup := server.serviceMap.LoadOrStore(s.name, s); dup {
@@ -218,9 +221,8 @@ func (server *Server) Register(rcvr interface{}) error {
 	return nil
 }
 
-func Register(rcvr interface{}) error {
-	return DefaultServer.Register(rcvr)
-}
+// Register publishes the receiver's methods in the DefaultServer.
+func Register(rcvr interface{}) error { return DefaultServer.Register(rcvr) }
 
 const (
 	connected        = "200 Connected to Gee RPC"
