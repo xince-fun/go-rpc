@@ -70,8 +70,8 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 var invalidRequest = struct{}{}
 
 func (server *Server) serveCodec(cc codec.Codec, opt *Option) {
-	sending := new(sync.Mutex)
-	wg := new(sync.WaitGroup)
+	sending := new(sync.Mutex) // make sure to send a complete response
+	wg := new(sync.WaitGroup)  // wait until all request are handled
 	for {
 		req, err := server.readRequest(cc)
 		if err != nil {
@@ -90,7 +90,7 @@ func (server *Server) serveCodec(cc codec.Codec, opt *Option) {
 }
 
 type request struct {
-	h            *codec.Header //header of request
+	h            *codec.Header // header of request
 	argv, replyv reflect.Value // argv and replyv of request
 	mtype        *methodType
 	svc          *service
@@ -101,8 +101,8 @@ func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 	if err := cc.ReadHeader(&h); err != nil {
 		if err != io.EOF && !errors.Is(err, io.ErrUnexpectedEOF) {
 			log.Println("rpc server: read header error:", err)
-			return nil, err
 		}
+		return nil, err
 	}
 	return &h, nil
 }

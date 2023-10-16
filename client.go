@@ -136,7 +136,6 @@ func (client *Client) Go(serviceMethod string, args, reply interface{}, done cha
 	} else if cap(done) == 0 {
 		log.Panic("rpc client: done channel is unbuffered")
 	}
-
 	call := &Call{
 		ServiceMethod: serviceMethod,
 		Args:          args,
@@ -186,7 +185,6 @@ func (client *Client) receive() {
 			call.done()
 		}
 	}
-
 	// error occurs, so terminateCalls pending calls
 	client.terminateCalls(err)
 }
@@ -241,15 +239,16 @@ type clientResult struct {
 
 type newClientFunc func(conn net.Conn, opt *Option) (client *Client, err error)
 
-func dialTimeout(f newClientFunc, networ, address string, opts ...*Option) (client *Client, err error) {
+func dialTimeout(f newClientFunc, network, address string, opts ...*Option) (client *Client, err error) {
 	opt, err := parseOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := net.DialTimeout(networ, address, opt.ConnectTimeout)
+	conn, err := net.DialTimeout(network, address, opt.ConnectTimeout)
 	if err != nil {
 		return nil, err
 	}
+	// close the connection if client is nil
 	defer func() {
 		if err != nil {
 			_ = conn.Close()
