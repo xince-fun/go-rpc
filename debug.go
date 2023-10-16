@@ -37,7 +37,7 @@ type debugService struct {
 	Method map[string]*methodType
 }
 
-// Runs at /debug/gorpc
+// Runs at /debug/geerpc
 func (server debugHTTP) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Build a sorted version of the data.
 	var services []debugService

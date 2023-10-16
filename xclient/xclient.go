@@ -3,6 +3,7 @@ package xclient
 import (
 	"context"
 	. "github.com/xince-fun/go-rpc"
+	"io"
 	"reflect"
 	"sync"
 )
@@ -15,13 +16,10 @@ type XClient struct {
 	clients map[string]*Client
 }
 
+var _ io.Closer = (*XClient)(nil)
+
 func NewXClient(d Discovery, mode SelectMode, opt *Option) *XClient {
-	return &XClient{
-		d:       d,
-		mode:    mode,
-		opt:     opt,
-		clients: make(map[string]*Client),
-	}
+	return &XClient{d: d, mode: mode, opt: opt, clients: make(map[string]*Client)}
 }
 
 func (xc *XClient) Close() error {
@@ -85,7 +83,6 @@ func (xc *XClient) Broadcast(ctx context.Context, serviceMethod string, args, re
 	var e error
 	replyDone := reply == nil // if reply is nil, don't need to set value
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	for _, rpcAddr := range servers {
 		wg.Add(1)
 		go func(rpcAddr string) {
